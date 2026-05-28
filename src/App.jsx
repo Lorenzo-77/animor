@@ -9,13 +9,13 @@ import { Admin } from './pages/Admin';
 function App() {
   return (
     <CartProvider>
-      <Router>
+      <Router basename="/animor">
         <div className="flex flex-col min-h-screen bg-animor-bg relative">
           <Navbar />
           <CartDrawer />
           
           <main className="flex-grow">
-            <Routes basename="/animor">
+            <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/coleccion" element={<Catalog />} />
               {/* LA NUEVA RUTA SECRETA */}
