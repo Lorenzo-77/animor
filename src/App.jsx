@@ -15,7 +15,7 @@ function App() {
           <CartDrawer />
           
           <main className="flex-grow">
-            <Routes>
+            <Routes basename="/animor">
               <Route path="/" element={<Home />} />
               <Route path="/coleccion" element={<Catalog />} />
               {/* LA NUEVA RUTA SECRETA */}
