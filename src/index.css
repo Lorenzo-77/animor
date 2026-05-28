@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  /* Paleta "Soft Luxury" de ANIMOR */
+  --color-animor-bg: #F8F5F2;        /* Crema suave */
+  --color-animor-card: #FFFDFB;      /* Blanco cálido */
+  --color-animor-primary: #B07D8C;   /* Mauve elegante */
+  --color-animor-cta: #8E5A68;       /* Rosa vino suave */
+  --color-animor-text: #2D2A2A;      /* Gris carbón cálido */
+  --color-animor-muted: #6F6866;     /* Gris topo */
+  --color-animor-border: #E5DDD7;    /* Beige grisáceo */
+  
+  --font-sans: "Inter", sans-serif;
+  --font-serif: "Playfair Display", serif;
+}
+
+@layer base {
+  body {
+    @apply bg-animor-bg text-animor-text font-sans antialiased;
+  }
+}
