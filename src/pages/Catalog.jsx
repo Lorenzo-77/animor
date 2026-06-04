@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SlidersHorizontal, X, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { ProductCard } from '../components/catalog/ProductCard';
 import { SkeletonCard } from '../components/ui/SkeletonCard';
@@ -17,9 +17,25 @@ export const Catalog = () => {
 
   const [activeCategory, setActiveCategory] = useState('all');
   const [sortBy,         setSortBy]         = useState('default');
-  const [showFilters,    setShowFilters]     = useState(false);
-  const [showSort,       setShowSort]        = useState(false);
-  const [priceMax,       setPriceMax]        = useState(null);
+  const [showFilters,    setShowFilters]    = useState(false);
+  const [showSort,       setShowSort]       = useState(false);
+  const [priceMax,       setPriceMax]       = useState(null);
+
+  // ── ESTADOS DEL PAGINADO ──
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Detectar si es mobile para cambiar de 8 a 6 productos
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Reiniciar a la página 1 si el usuario cambia algún filtro
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, sortBy, priceMax]);
 
   const categories = useMemo(
     () => ['all', ...new Set(products.map(p => p.category))],
@@ -46,9 +62,25 @@ export const Catalog = () => {
     return list;
   }, [products, activeCategory, sortBy, priceMax]);
 
+  // ── LÓGICA DE CÁLCULO DEL PAGINADO ──
+  const itemsPerPage = isMobile ? 6 : 8;
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  
+  // Cortamos el array original para mostrar solo los de la página actual
+  const currentProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const activeFilterCount = (activeCategory !== 'all' ? 1 : 0) + (priceMax !== null ? 1 : 0);
 
   const clearFilters = () => { setActiveCategory('all'); setPriceMax(null); setSortBy('default'); };
+
+  // Subir suavemente al cambiar de página
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="pt-28 pb-24 min-h-screen bg-animor-bg">
@@ -60,7 +92,7 @@ export const Catalog = () => {
           animate={{ opacity: 1 }}
           className="text-[10px] uppercase tracking-widest text-animor-primary block mb-3"
         >
-          Temporada 2025
+          Temporada 2026
         </motion.span>
         <motion.h1
           initial={{ opacity: 0, y: 16 }}
@@ -104,8 +136,6 @@ export const Catalog = () => {
 
             {/* Acciones derechas */}
             <div className="flex items-center gap-2 flex-shrink-0">
-
-              {/* Filtros avanzados */}
               <button
                 onClick={() => setShowFilters(f => !f)}
                 className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-medium px-3 py-2 border border-animor-border rounded-full hover:border-animor-primary hover:text-animor-primary transition-colors relative"
@@ -119,7 +149,6 @@ export const Catalog = () => {
                 )}
               </button>
 
-              {/* Ordenar */}
               <div className="relative">
                 <button
                   onClick={() => setShowSort(s => !s)}
@@ -158,7 +187,6 @@ export const Catalog = () => {
             </div>
           </div>
 
-          {/* Panel de filtros expandible */}
           <AnimatePresence>
             {showFilters && (
               <motion.div
@@ -169,8 +197,6 @@ export const Catalog = () => {
                 className="overflow-hidden border-t border-animor-border"
               >
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-
-                  {/* Rango de precio */}
                   <div className="flex-1 min-w-[200px]">
                     <label className="text-[10px] uppercase tracking-widest text-animor-muted block mb-3">
                       Precio máximo: {priceMax !== null ? `$${priceMax.toLocaleString()}` : 'Sin límite'}
@@ -190,7 +216,6 @@ export const Catalog = () => {
                     </div>
                   </div>
 
-                  {/* Limpiar */}
                   {activeFilterCount > 0 && (
                     <button
                       onClick={clearFilters}
@@ -210,11 +235,10 @@ export const Catalog = () => {
       <div className="max-w-7xl mx-auto px-4 md:px-6">
         {error && <p className="text-center text-red-400 mb-8 text-sm">Error al cargar los productos.</p>}
 
-        {/* Contador de resultados */}
         {!loading && (
           <div className="flex items-center justify-between mb-5">
             <p className="text-[11px] text-animor-muted uppercase tracking-widest">
-              {filteredProducts.length} {filteredProducts.length === 1 ? 'pieza' : 'piezas'}
+              Mostrando {currentProducts.length} de {filteredProducts.length} {filteredProducts.length === 1 ? 'pieza' : 'piezas'}
             </p>
             {activeFilterCount > 0 && (
               <button onClick={clearFilters} className="text-[10px] text-animor-muted hover:text-animor-cta flex items-center gap-1 transition-colors">
@@ -224,11 +248,12 @@ export const Catalog = () => {
           </div>
         )}
 
+        {/* Usamos currentProducts en lugar de filteredProducts para mapear la grilla */}
         <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
           <AnimatePresence mode="popLayout">
             {loading
-              ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
-              : filteredProducts.map(product => (
+              ? Array.from({ length: itemsPerPage }).map((_, i) => <SkeletonCard key={i} />)
+              : currentProducts.map(product => (
                   <motion.div
                     key={product.id}
                     layout
@@ -243,6 +268,41 @@ export const Catalog = () => {
             }
           </AnimatePresence>
         </motion.div>
+
+        {/* ── CONTROLES DE PAGINACIÓN ── */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-16 border-t border-animor-border pt-10">
+            <button
+              onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="w-10 h-10 flex items-center justify-center border border-animor-border rounded-sm text-animor-muted hover:text-animor-primary hover:border-animor-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => handlePageChange(i + 1)}
+                className={`w-10 h-10 flex items-center justify-center border rounded-sm text-xs font-medium transition-colors ${
+                  currentPage === i + 1
+                    ? 'bg-animor-text text-white border-animor-text'
+                    : 'border-animor-border text-animor-muted hover:border-animor-primary hover:text-animor-primary'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+
+            <button
+              onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="w-10 h-10 flex items-center justify-center border border-animor-border rounded-sm text-animor-muted hover:text-animor-primary hover:border-animor-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
 
         {/* Empty state */}
         {!loading && filteredProducts.length === 0 && (

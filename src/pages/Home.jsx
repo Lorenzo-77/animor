@@ -9,7 +9,6 @@ import { SkeletonCard } from '../components/ui/SkeletonCard';
 import videoDemo from '../assets/img/video-demo.mp4';
 import videoBanner from '../assets/img/video-banner.mp4';
 
-// Datos de contacto actualizados
 const PHONE = "5492657317153"; 
 const IG_URL = "https://www.instagram.com/animor.vm/";
 
@@ -39,7 +38,10 @@ const TESTIMONIALS = [
 
 export const Home = () => {
   const { products, loading, error } = useProducts();
-  const featuredProducts = products.slice(0, 4);
+  
+  // LÓGICA ESTRICTA: SOLO muestra los que tienen la estrellita (isFeatured).
+  // Se acabó el relleno automático con otras prendas.
+  const displayProducts = products.filter(p => p.isFeatured).slice(0, 4);
 
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
@@ -162,8 +164,21 @@ export const Home = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
             {loading
               ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-              : featuredProducts.map(product => <ProductCard key={product.id} product={product} />)
+              : displayProducts.length > 0 
+                ? displayProducts.map(product => <ProductCard key={product.id} product={product} />)
+                : <p className="col-span-2 lg:col-span-4 text-center text-animor-muted py-10 text-sm font-light">
+                    Aún no hay piezas destacadas por el momento.
+                  </p>
             }
+          </div>
+
+          <div className="mt-12 text-center md:hidden">
+            <Link
+              to="/coleccion"
+              className="inline-flex items-center gap-2 px-8 py-3 border border-animor-text text-animor-text text-xs uppercase tracking-widest hover:bg-animor-text hover:text-white transition-colors"
+            >
+              Ver Catálogo Completo <ArrowRight size={12} />
+            </Link>
           </div>
         </div>
       </section>

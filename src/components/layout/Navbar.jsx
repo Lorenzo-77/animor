@@ -97,7 +97,7 @@ export const Navbar = () => {
                 <Link
                   key={to}
                   to={to}
-                  onClick={to === '/animor' ? handleScrollTop : undefined}  
+                  onClick={to === '/' ? handleScrollTop : undefined}
                   className="relative text-[11px] uppercase tracking-widest font-medium transition-colors duration-200 py-1"
                   style={{ color: active ? 'var(--color-animor-primary)' : 'var(--color-animor-muted)' }}
                 >

@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Image as ImageIcon, CheckCircle, Plus,
   Edit2, List, PlusCircle, X, Package, Tag,
-  AlertTriangle, Layers, Search,
+  AlertTriangle, Layers, Search, Star // <-- Importamos Star
 } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzX5DizgafkqoajjhaRajtGIccEqrPuJhQeQMZbLWeu8PY5zy_iiZNWkRpA8NUjjYXH/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzjK4utq5GEswBszgHZ4pv4xhdkQmrITuhkOC8EnaiLNl2D_AdY8Fcr0YWT9RTW-V37ng/exec";
 
 const STOCK_CONFIG = {
   available: { label: 'Disponible',       bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-400' },
@@ -31,9 +31,11 @@ export const Admin = () => {
   const [activeTab,        setActiveTab]        = useState('list');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [search,           setSearch]           = useState('');
+  
+  // Agregamos isFeatured al estado inicial
   const [formData,         setFormData]         = useState({
     id: '', title: '', price: '', category: '',
-    sizes: '', stock: 'available', isSale: false, salePrice: '', isNew: false,
+    sizes: '', stock: 'available', isSale: false, salePrice: '', isNew: false, isFeatured: false,
   });
   const [selectedColors, setSelectedColors] = useState([]);
   const [tempColor,      setTempColor]      = useState('#B07D8C');
@@ -62,6 +64,7 @@ export const Admin = () => {
       category: product.category || '', sizes: product.sizes ? product.sizes.join(', ') : '',
       stock: product.stock || 'available', isSale: product.salePrice != null,
       salePrice: product.salePrice || '', isNew: product.isNew || false,
+      isFeatured: product.isFeatured || false, // <-- Agregado para edición
     });
     setSelectedColors(product.colors || []);
     setImagePreview(product.image);
@@ -70,7 +73,8 @@ export const Admin = () => {
   };
 
   const handleNewProduct = () => {
-    setFormData({ id: '', title: '', price: '', category: '', sizes: '', stock: 'available', isSale: false, salePrice: '', isNew: false });
+    // Reseteamos isFeatured a false
+    setFormData({ id: '', title: '', price: '', category: '', sizes: '', stock: 'available', isSale: false, salePrice: '', isNew: false, isFeatured: false });
     setSelectedColors([]);
     setImagePreview(null);
     setBase64(null);
@@ -95,10 +99,12 @@ export const Admin = () => {
   };
 
   // Stats rápidas para el header
-  const total     = products.length;
+  const total      = products.length;
   const outOfStock = products.filter(p => p.stock === 'out').length;
-  const onSale    = products.filter(p => p.salePrice != null).length;
-  const isNew     = products.filter(p => p.isNew).length;
+  const onSale     = products.filter(p => p.salePrice != null).length;
+  const isNew      = products.filter(p => p.isNew).length;
+
+  const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
 
   const filtered = products.filter(p =>
     p.title?.toLowerCase().includes(search.toLowerCase()) ||
@@ -265,6 +271,12 @@ export const Admin = () => {
                               {/* Badges */}
                               <td className="px-5 py-4 hidden md:table-cell">
                                 <div className="flex gap-1 flex-wrap">
+                                  {/* Badge de destacado agregado visualmente */}
+                                  {prod.isFeatured && (
+                                    <span className="text-[9px] uppercase tracking-widest px-2 py-0.5 bg-amber-100/60 text-amber-700 rounded-full flex items-center gap-1">
+                                      <Star size={9} className="fill-amber-600" /> Destacado
+                                    </span>
+                                  )}
                                   {prod.isNew && (
                                     <span className="text-[9px] uppercase tracking-widest px-2 py-0.5 bg-animor-primary/10 text-animor-primary rounded-full">
                                       Nuevo
@@ -277,7 +289,7 @@ export const Admin = () => {
                                   )}
                                   {/* Colores */}
                                   {prod.colors?.length > 0 && (
-                                    <div className="flex gap-1 items-center">
+                                    <div className="flex gap-1 items-center ml-1">
                                       {prod.colors.slice(0, 4).map(c => (
                                         <span key={c} className="w-3 h-3 rounded-full border border-animor-border shadow-inner" style={{ backgroundColor: c }} />
                                       ))}
@@ -364,7 +376,24 @@ export const Admin = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <InputField label="Precio Regular ($)" type="number" required value={formData.price} onChange={e => set('price', e.target.value)} placeholder="15000" />
-                <InputField label="Categoría" type="text" required value={formData.category} onChange={e => set('category', e.target.value)} placeholder="Ej: Remeras" />
+                
+                {/* ── SELECTOR / INPUT DE CATEGORÍA CON DATALIST ── */}
+                <div>
+                  <InputField 
+                    label="Categoría" 
+                    type="text" 
+                    required 
+                    value={formData.category} 
+                    onChange={e => set('category', e.target.value)} 
+                    placeholder="Escribí o elegí" 
+                    list="category-options" 
+                  />
+                  <datalist id="category-options">
+                    {uniqueCategories.map(cat => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
+                </div>
               </div>
 
               <InputField label="Talles (separados por coma)" type="text" value={formData.sizes} onChange={e => set('sizes', e.target.value)} placeholder="Único, S, M, L, XL" />
@@ -417,6 +446,11 @@ export const Admin = () => {
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" checked={formData.isSale} onChange={e => set('isSale', e.target.checked)} className="accent-animor-primary w-4 h-4" />
                     <span className="text-xs uppercase tracking-widest text-animor-text">¿En Oferta?</span>
+                  </label>
+                  {/* 👇 CHECKBOX DE DESTACADO 👇 */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={formData.isFeatured} onChange={e => set('isFeatured', e.target.checked)} className="accent-animor-primary w-4 h-4" />
+                    <span className="text-xs uppercase tracking-widest text-animor-text flex items-center gap-1">¿Destacado? <Star size={12}/></span>
                   </label>
                 </div>
 

@@ -1,18 +1,16 @@
 // src/hooks/useProducts.js
 import { useState, useEffect } from 'react';
 import Papa from 'papaparse';
+ 
+const sheetUrl = "https://docs.google.com/spreadsheets/d/1xMNKOx39UQV9Dc2jEp-qtt2QS0HaIpEqKFRh5EB2ans/export?format=csv&gid=1184847363";
 
-const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZfUZS0IdRbBX8FB0RWmFmlagUv9i2EfQaDXfQoXA010TTxJSJSjmwlQfcpzJceArBz0KmmoYUqixK/pub?output=csv";
-
-// 👇 Función hacker para saltar el bloqueo de Google Drive 👇
+// Función hacker para saltar el bloqueo de Google Drive
 const fixGoogleDriveImage = (url) => {
   if (!url) return url;
   
-  // Si detecta que es de Google Drive, le extrae el ID
   if (url.includes('drive.google.com')) {
     const idMatch = url.match(/id=([^&]+)/);
     if (idMatch && idMatch[1]) {
-      // Usamos el endpoint secreto "thumbnail" con sz=w1000 (ancho de 1000px)
       return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000`;
     }
   }
@@ -41,13 +39,14 @@ export const useProducts = () => {
                 sizes: item.sizes ? String(item.sizes).split(',').map(s => s.trim()) : null,
                 colors: item.colors ? String(item.colors).split(',').map(c => c.trim()) : null,
                 
-                // Pasa la imagen por nuestra nueva función mágica
                 image: fixGoogleDriveImage(item.image),
                 images: item.images 
                   ? String(item.images).split(',').map(img => fixGoogleDriveImage(img.trim())) 
                   : [fixGoogleDriveImage(item.image)],
                   
-                isNew: item.isNew === 'TRUE' || item.isNew === true || item.isNew === 1,
+                // MAGIA ANTI-BUGS: El .trim() elimina los saltos de línea invisibles (\r) de la última columna
+                isNew: String(item.isNew).trim().toUpperCase() === 'TRUE' || item.isNew === true || item.isNew === 1,
+                isFeatured: String(item.isFeatured).trim().toUpperCase() === 'TRUE' || item.isFeatured === true || item.isFeatured === 1,
               }));
 
             setProducts(validProducts);
